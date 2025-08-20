@@ -1,0 +1,56 @@
+notifiers:
+  telegram_main:
+    type: telegram
+    token: ${TELEGRAM_BOT_TOKEN}
+    default_parse_mode: Markdown
+
+routes:
+  - name: wlfi_lowest_exit
+    match:
+      poller_name: whales_wlfi
+    deliveries:
+      - notifier: telegram_main
+        chat_id: ${TELEGRAM_CHAT_ID}
+        template: "WLFI 新挂出最低价: price={price} total={total_amount} value={value} (id={__id__})"
+
+pollers:
+  whales_wlfi:
+    type: http_json
+    interval_seconds: 60
+    request:
+      url: https://api.whales.market/v2/offers
+      method: GET
+      headers: {}
+      timeout_seconds: 15
+      params:
+        take: 200
+        page: 1
+        type: sell
+        full_match: ""
+        symbol: WLFI
+        status: open
+        min_price: ""
+        max_price: ""
+        sort_price: ASC
+        category_token: pre_market
+        chains: 1
+    extract:
+      items_jmespath: data.list
+    id_path: id
+    fields:
+      price: price
+      total_amount: total_amount
+      value: value
+      is_exit_position: is_exit_position
+    post_process:
+      where:
+        is_exit_position: true
+      where_gte:
+        value: 1000
+      pick:
+        type: lowest_by
+        key: price
+      dedupe_key_fields:
+        - price
+        - total_amount
+        - value 

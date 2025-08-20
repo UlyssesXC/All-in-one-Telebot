@@ -1,0 +1,38 @@
+# 示例配置
+# 将本文件复制为 config.yaml 并按需修改
+
+notifiers:
+  telegram_main:
+    type: telegram
+    # 支持直接填写 token 或使用 ${ENV_VAR} 从环境变量读取
+    token: ${TELEGRAM_BOT_TOKEN}
+    default_parse_mode: Markdown
+
+routes:
+  - name: route_sample
+    match:
+      poller_name: sample_api
+    deliveries:
+      - notifier: telegram_main
+        chat_id: -1001234567890
+        template: "[{symbol}] price: {price}"
+
+pollers:
+  sample_api:
+    type: http_json
+    interval_seconds: 15
+    request:
+      url: https://api.example.com/data
+      method: GET
+      headers: {}
+      timeout_seconds: 10
+    extract:
+      # 使用 JMESPath 选出一组元素，逐个作为事件。常见如: data.items 或 items
+      items_jmespath: data.items
+    # 去重/进度字段
+    id_path: id
+    updated_at_path: updated_at
+    # 字段映射：从每个元素中提取并命名
+    fields:
+      symbol: symbol
+      price: price 
